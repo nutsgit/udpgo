@@ -8,9 +8,14 @@ import (
 const maxPackageLength = 60000
 const udpAddress = ":8030"
 
-func main() {
+var count = 0
 
-	serverAddr, err := net.ResolveUDPAddr("udp", udpAddress)
+func onRecv(addr *net.UDPAddr, msg string) {
+	fmt.Println("Received ", msg, " from ", addr, ". Total length is ", count)
+}
+
+func startServer(address string) {
+	serverAddr, err := net.ResolveUDPAddr("udp", address)
 	ExitOnError(err)
 
 	/* Now listen at selected port */
@@ -20,18 +25,20 @@ func main() {
 
 	buf := make([]byte, maxPackageLength)
 
-	count := 0
-
 	fmt.Println("UDP server start listening on ", serverAddr, " ...")
 
 	for {
 		n, addr, err := serverConn.ReadFromUDP(buf)
 		count += n
-		fmt.Println("Received ", string(buf[0:n]), " from ", addr, ". Total length is ", count)
 
 		if err != nil {
 			fmt.Println("Error: ", err)
+		} else {
+			go onRecv(addr, string(buf[0:n]))
 		}
 	}
+}
 
+func main() {
+	startServer(udpAddress)
 }
